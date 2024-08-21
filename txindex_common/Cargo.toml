@@ -1,0 +1,27 @@
+[package]
+edition = "2021"
+name    = "txindex_common"
+version = "0.1.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+arrayref      = { workspace = true }
+serde      = { workspace = true }
+serde_json      = { workspace = true }
+serde_with = { workspace = true }
+bincode = { workspace = true }
+hex = { workspace = true }
+bitcoin = { workspace = true }
+stderrlog = { workspace = true }
+clap = { workspace = true }
+error-chain = { workspace = true }
+anyhow = { workspace = true }
+hex-literal = { workspace = true }
+lazy_static = { workspace = true }
+time = { workspace = true }
+log = { workspace = true }
+kvq = { path = "../kvq" }
+kvq_store_rocksdb = { path = "../kvq_store_rocksdb" }
+txindex_errors = { path = "../txindex_errors" }
+dirs = "5.0.1"

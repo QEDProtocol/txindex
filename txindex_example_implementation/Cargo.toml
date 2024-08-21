@@ -1,0 +1,32 @@
+[package]
+name = "txindex_example_implementation"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+http = { workspace = true }
+http-body-util = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+bincode = { workspace = true }
+tokio = { workspace = true }
+anyhow = { workspace = true }
+hex = { workspace = true }
+futures = { workspace = true }
+hyper = { workspace = true }
+hyperlocal = { workspace = true }
+hyper-util = { workspace = true }
+socket2 = { workspace = true }
+stderrlog = { workspace = true }
+log = { workspace = true }
+num_cpus = { workspace = true }
+crossbeam-channel = { workspace = true }
+bitcoin = { workspace = true }
+
+
+kvq = { path = "../kvq" }
+kvq_store_redb = { path = "../kvq_store_redb" }
+
+txindex_common = { path = "../txindex_common" }
+txindex_errors = { path = "../txindex_errors" }
+txindex_server = { path = "../txindex_server" }
