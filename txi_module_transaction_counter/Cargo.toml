@@ -1,0 +1,18 @@
+[package]
+name = "txi_module_transaction_counter"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+log = { workspace = true }
+bitcoin = { workspace = true }
+bincode = { workspace = true }
+itertools = { workspace = true }
+
+
+kvq = { path = "../kvq" }
+txindex_common = { path = "../txindex_common" }
+txindex_errors = { path = "../txindex_errors" }
