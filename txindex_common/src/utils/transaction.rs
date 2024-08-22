@@ -1,7 +1,9 @@
-use bitcoin::{BlockHash, OutPoint, Transaction, TxIn, TxOut, Txid};
+use bitcoin::{address::NetworkChecked, hashes::Hash, Address, BlockHash, OutPoint, Transaction, TxIn, TxOut, Txid};
 use serde::{Deserialize, Serialize};
 
 use std::collections::HashMap;
+
+use crate::{chain::Network, db::chain::TxIndexChainAPI};
 
 use super::block::BlockId;
 
@@ -84,4 +86,34 @@ where
     s.serialize_field("txid", &outpoint.txid)?;
     s.serialize_field("vout", &outpoint.vout)?;
     s.end()
+}
+
+pub fn get_input_addresses_for_transaction<Q: TxIndexChainAPI>(chain: &Q, tx: &Transaction) -> Vec<Address<NetworkChecked>> {
+    let n = chain.get_bitcoin_network();
+    tx.input.iter().filter_map(|txin| {
+        if is_coinbase(txin) {
+            return None;
+        }
+        let prevout = chain.get_transaction(txin.previous_output.txid.as_raw_hash().to_byte_array()).ok()?;
+        let k = prevout.output.get(txin.previous_output.vout as usize);
+        if k.is_none() {
+            return None;
+        }
+        let address = Address::from_script(&k.unwrap().script_pubkey, n).map(|x| Some(x)).unwrap_or(None);
+        if address.is_none() {
+            return None;
+        }else{
+            return address;
+        }
+    }).collect()
+}
+pub fn get_output_addresses_for_transaction(tx: &Transaction, network: Network) -> Vec<Address<NetworkChecked>> {
+    tx.output.iter().filter_map(|txout| {
+         let p = Address::from_script(&txout.script_pubkey, network.into());
+         if p.is_err() {
+              None
+         }else{
+            Some(p.unwrap())
+         }
+    }).collect()
 }

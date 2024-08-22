@@ -1,6 +1,6 @@
 pub mod block;
 pub mod transaction;
-
+pub mod url;
 use std::collections::HashMap;
 use std::sync::mpsc::{channel, sync_channel, Receiver, Sender, SyncSender};
 use std::thread;

@@ -6,7 +6,9 @@ members = [
   "txindex_errors",
   "txindex_common",
   "txindex_server",
-  "txindex_example_implementation"
+  "txi_module_transaction_counter",
+
+  "txi_example_server"
 ]
 resolver = "2"
 
@@ -53,7 +55,7 @@ tracing = "0.1.40"
 tracing-log = "0.2.0"
 tracing-subscriber = { version = "0.3.17", features = ["std", "env-filter"] }
 shadow-rs = "0.27.1"
-bitcoin = { git = "https://github.com/QEDProtocol/rust-dogecoin", rev = "8eedd4dd8113f4f2af1e8fbdc5bf53ffeb3e19cf", features = [ "serde" ] }
+bitcoin = { git = "https://github.com/QEDProtocol/rust-dogecoin", rev = "9b52ed2ddc18c2062c741b7df7a6e70aabde3bb8", features = [ "serde" ] }
 
 tower-http = { version = "0.5.2", features = ["full"] }
 tower = { version = "0.4.13", features = ["full"] }

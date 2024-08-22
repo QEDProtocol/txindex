@@ -54,7 +54,7 @@ pub async fn handle(
     let body = req.collect().await?.to_bytes();
     let query = Arc::clone(&self.query);
     let config = Arc::clone(&self.config);
-    if uri.path().starts_with("/indexers/") {
+    if uri.path().starts_with("/indexer/") {
 
 
     let resp = API::handle_request(method, uri, body, query, config)

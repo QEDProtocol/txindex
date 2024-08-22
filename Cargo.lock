@@ -186,7 +186,7 @@ dependencies = [
 [[package]]
 name = "bitcoin"
 version = "0.31.2"
-source = "git+https://github.com/QEDProtocol/rust-dogecoin?rev=8eedd4dd8113f4f2af1e8fbdc5bf53ffeb3e19cf#8eedd4dd8113f4f2af1e8fbdc5bf53ffeb3e19cf"
+source = "git+https://github.com/QEDProtocol/rust-dogecoin?rev=9b52ed2ddc18c2062c741b7df7a6e70aabde3bb8#9b52ed2ddc18c2062c741b7df7a6e70aabde3bb8"
 dependencies = [
  "bech32",
  "bitcoin-internals",
@@ -907,6 +907,15 @@ name = "is_terminal_polyfill"
 version = "1.70.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7943c866cc5cd64cbc25b2e01621d07fa8eb2a1a23160ee81ce38704e97b8ecf"
+
+[[package]]
+name = "itertools"
+version = "0.10.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
+dependencies = [
+ "either",
+]
 
 [[package]]
 name = "itertools"
@@ -1854,6 +1863,51 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
+name = "txi_example_server"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "bitcoin",
+ "crossbeam-channel",
+ "futures",
+ "hex",
+ "http 0.2.12",
+ "http-body-util",
+ "hyper",
+ "hyper-util",
+ "hyperlocal",
+ "kvq",
+ "log",
+ "num_cpus",
+ "serde",
+ "serde_json",
+ "socket2",
+ "stderrlog",
+ "tokio",
+ "txi_module_transaction_counter",
+ "txindex_common",
+ "txindex_errors",
+ "txindex_server",
+]
+
+[[package]]
+name = "txi_module_transaction_counter"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "bitcoin",
+ "itertools 0.10.5",
+ "kvq",
+ "log",
+ "serde",
+ "serde_json",
+ "txindex_common",
+ "txindex_errors",
+]
+
+[[package]]
 name = "txindex_common"
 version = "0.1.0"
 dependencies = [
@@ -1876,6 +1930,7 @@ dependencies = [
  "stderrlog",
  "time 0.3.36",
  "txindex_errors",
+ "url",
 ]
 
 [[package]]
@@ -1886,35 +1941,6 @@ dependencies = [
  "hex",
  "serde",
  "serde_with",
-]
-
-[[package]]
-name = "txindex_example_implementation"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bincode",
- "bitcoin",
- "crossbeam-channel",
- "futures",
- "hex",
- "http 0.2.12",
- "http-body-util",
- "hyper",
- "hyper-util",
- "hyperlocal",
- "kvq",
- "kvq_store_redb",
- "log",
- "num_cpus",
- "serde",
- "serde_json",
- "socket2",
- "stderrlog",
- "tokio",
- "txindex_common",
- "txindex_errors",
- "txindex_server",
 ]
 
 [[package]]
@@ -1940,7 +1966,7 @@ dependencies = [
  "hyper",
  "hyper-util",
  "hyperlocal",
- "itertools",
+ "itertools 0.12.1",
  "kvq",
  "kvq_store_rocksdb",
  "lazy_static",

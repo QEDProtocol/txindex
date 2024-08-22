@@ -1,4 +1,4 @@
-use bitcoin::{address::NetworkChecked, consensus::encode::{deserialize, serialize}, hashes::Hash, Block, Transaction};
+use bitcoin::{consensus::encode::{deserialize, serialize}, Block, Transaction};
 use txindex_macros::impl_kvq_serialize;
 
 use super::traits::KVQSerializable;

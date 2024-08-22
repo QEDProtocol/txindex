@@ -1,10 +1,12 @@
 use clap::Arg;
 use clap::{command, crate_version};
 use dirs::home_dir;
+use url::Url;
 use std::fs;
 use std::net::SocketAddr;
 use std::net::ToSocketAddrs;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::sync::Arc;
 use stderrlog;
 
@@ -28,7 +30,7 @@ pub struct Config {
     pub db_path: PathBuf,
     pub daemon_dir: PathBuf,
     pub blocks_dir: PathBuf,
-    pub daemon_rpc_addr: SocketAddr,
+    pub daemon_rpc_url: Url,
     pub cookie: Option<String>,
     pub http_addr: SocketAddr,
     pub http_socket_file: Option<PathBuf>,
@@ -54,6 +56,10 @@ fn str_to_socketaddr(address: &str, what: &str) -> SocketAddr {
         .unwrap()
 }
 
+fn str_to_url(address: &str, what: &str) -> Url {
+    Url::from_str(address).unwrap_or_else(|_| panic!("unable to resolve {} url", what))
+}
+
 impl Config {
     pub fn from_args() -> Config {
         let network_help = format!("Select network type ({})", Network::names().join(", "));
@@ -67,6 +73,7 @@ impl Config {
             .arg(
                 Arg::new("verbosity")
                     .short('v')
+                    .action(clap::ArgAction::Count)
                     .help("Increase logging verbosity"),
             )
             .arg(
@@ -111,9 +118,9 @@ impl Config {
                     .help("HTTP server 'addr:port' to listen on (default: '127.0.0.1:3000' for mainnet, '127.0.0.1:3001' for testnet and '127.0.0.1:3002' for regtest)"),
             )
             .arg(
-                Arg::new("daemon_rpc_addr")
-                    .long("daemon-rpc-addr")
-                    .help("Bitcoin daemon JSONRPC 'addr:port' to connect (default: 127.0.0.1:8332 for mainnet, 127.0.0.1:18332 for testnet and 127.0.0.1:18443 for regtest)"),
+                Arg::new("daemon_rpc_url")
+                    .long("daemon-rpc-url")
+                    .help("Bitcoin daemon JSONRPC 'http://addr:port/path' to connect (default: http://127.0.0.1:8332 for mainnet, http://127.0.0.1:18332 for testnet and http://127.0.0.1:18443 for regtest)"),
             )
             .arg(
                 Arg::new("monitoring_addr")
@@ -123,6 +130,7 @@ impl Config {
             .arg(
                 Arg::new("jsonrpc_import")
                     .long("jsonrpc-import")
+                    .action(clap::ArgAction::SetTrue)
                     .help("Use JSONRPC instead of directly importing blk*.dat files. Useful for remote full node or low memory system"),
             )
             .arg(
@@ -206,8 +214,8 @@ impl Config {
             Network::Signet => 54224,
         };
 
-        let daemon_rpc_addr: SocketAddr = str_to_socketaddr(
-            &get_or_default_str(&m, "daemon_rpc_addr",&format!("127.0.0.1:{}", default_daemon_port)),
+        let daemon_rpc_url: Url = str_to_url(
+            &get_or_default_str(&m, "daemon_rpc_url",&format!("http://127.0.0.1:{}/", default_daemon_port)),
             "Bitcoin RPC",
         );
         let http_addr: SocketAddr = str_to_socketaddr(
@@ -258,7 +266,7 @@ impl Config {
             db_path,
             daemon_dir,
             blocks_dir,
-            daemon_rpc_addr,
+            daemon_rpc_url,
             cookie,
             utxos_limit: 1000,
             electrum_txs_limit: 100,

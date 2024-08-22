@@ -19,6 +19,7 @@ use bitcoin::consensus::encode::{deserialize, serialize_hex};
 
 use txindex_common::chain::{Block, BlockHash, BlockHeader, Network, Transaction, Txid};
 use txindex_common::daemon::cookie::CookieGetter;
+use url::Url;
 use crate::utils::metrics::{HistogramOpts, HistogramVec, Metrics};
 use crate::utils::signal::Waiter;
 use txindex_common::utils::block::{HeaderList, DEFAULT_BLOCKHASH};
@@ -133,8 +134,10 @@ struct Connection {
     tx: TcpStream,
     rx: Lines<BufReader<TcpStream>>,
     cookie_getter: Arc<dyn CookieGetter>,
-    addr: SocketAddr,
+    rpc_path: String,
     signal: Waiter,
+    url: url::Url,
+    host_header_value: String,
 }
 
 fn tcp_connect(addr: SocketAddr, signal: &Waiter) -> Result<TcpStream> {
@@ -160,10 +163,17 @@ fn tcp_connect(addr: SocketAddr, signal: &Waiter) -> Result<TcpStream> {
 
 impl Connection {
     fn new(
-        addr: SocketAddr,
+        rpc_url: url::Url,
         cookie_getter: Arc<dyn CookieGetter>,
         signal: Waiter,
     ) -> Result<Connection> {
+        let host = rpc_url.host().unwrap_or_else(|| panic!("no host in {:?}", rpc_url));
+        let host_header_value = format!("{}:{}", host, (&rpc_url).port().unwrap_or(8332));
+
+        let addr: SocketAddr =host_header_value
+            .parse()
+            .chain_err(|| format!("invalid address: {:?}", rpc_url))?;
+        let path = rpc_url.path();
         let conn = tcp_connect(addr, &signal)?;
         let reader = BufReader::new(
             conn.try_clone()
@@ -173,20 +183,24 @@ impl Connection {
             tx: conn,
             rx: reader.lines(),
             cookie_getter,
-            addr,
             signal,
+            rpc_path: path.to_string(),
+            url: rpc_url,
+            host_header_value,
         })
     }
 
     fn reconnect(&self) -> Result<Connection> {
-        Connection::new(self.addr, self.cookie_getter.clone(), self.signal.clone())
+        Connection::new(self.url.clone(), self.cookie_getter.clone(), self.signal.clone())
     }
 
     fn send(&mut self, request: &str) -> Result<()> {
         let cookie = &self.cookie_getter.get()?;
         let msg = format!(
-            "POST / HTTP/1.1\nAuthorization: Basic {}\nContent-Length: {}\n\n{}",
+            "POST {} HTTP/1.1\nAuthorization: Basic {}\nHost: {}\nContent-Length: {}\n\n{}",
+            self.rpc_path,
             BASE64_STANDARD.encode(cookie),
+            self.host_header_value,
             request.len(),
             request,
         );
@@ -293,7 +307,7 @@ impl Daemon {
     pub fn new(
         daemon_dir: &PathBuf,
         blocks_dir: &PathBuf,
-        daemon_rpc_addr: SocketAddr,
+        daemon_rpc_url: Url,
         cookie_getter: Arc<dyn CookieGetter>,
         network: Network,
         signal: Waiter,
@@ -304,7 +318,7 @@ impl Daemon {
             blocks_dir: blocks_dir.clone(),
             network,
             conn: Mutex::new(Connection::new(
-                daemon_rpc_addr,
+                daemon_rpc_url,
                 cookie_getter,
                 signal.clone(),
             )?),

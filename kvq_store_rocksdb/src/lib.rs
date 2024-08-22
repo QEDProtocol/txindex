@@ -7,17 +7,35 @@ use kvq::traits::KVQBinaryStoreWriterAutoImmutable;
 use kvq::traits::KVQBinaryStoreWriterImmutable;
 use kvq::traits::KVQPair;
 use rocksdb::ErrorKind;
-use rocksdb::TransactionDB;
 pub mod compat;
 #[derive(Clone)]
 pub struct KVQRocksDBStore {
-    db: Arc<TransactionDB>,
+    db: Arc<rocksdb::DB>,
 }
 impl KVQRocksDBStore {
     pub fn open_default<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
-        Ok(Self {
-            db: Arc::new(TransactionDB::open_default(path)?),
-        })
+
+        let mut db_opts = rocksdb::Options::default();
+        db_opts.create_if_missing(true);
+        db_opts.set_max_open_files(100_000); // TODO: make sure to `ulimit -n` this process correctly
+        db_opts.set_compaction_style(rocksdb::DBCompactionStyle::Level);
+        db_opts.set_compression_type(rocksdb::DBCompressionType::Snappy);
+        db_opts.set_target_file_size_base(1_073_741_824);
+        db_opts.set_write_buffer_size(256 << 20);
+        db_opts.set_disable_auto_compactions(false); // for initial bulk load
+
+        // db_opts.set_advise_random_on_open(???);
+        db_opts.set_compaction_readahead_size(1 << 20);
+        db_opts.increase_parallelism(2);
+
+        // let mut block_opts = rocksdb::BlockBasedOptions::default();
+        // block_opts.set_block_size(???);
+        let db_inner = rocksdb::DB::open(&db_opts, path).expect("failed to open RocksDB");
+
+        let db = Self {
+            db: Arc::new(db_inner),
+        };
+        Ok(db)
     }
 }
 fn compare_u8_array_a_le_b(a: &[u8], b: &[u8]) -> bool {
@@ -258,11 +276,15 @@ impl KVQBinaryStoreWriter for KVQRocksDBStore {
 impl KVQBinaryStoreWriterImmutable for KVQRocksDBStore {
     fn imm_set(&self, key: Vec<u8>, value: Vec<u8>) -> anyhow::Result<()> {
         self.db.put(key, value)?;
+        self.db.flush()?;
+
         Ok(())
     }
 
     fn imm_set_ref(&self, key: &Vec<u8>, value: &Vec<u8>) -> anyhow::Result<()> {
         self.db.put(key.clone(), value.clone())?;
+        self.db.flush()?;
+
         Ok(())
     }
 
@@ -270,19 +292,20 @@ impl KVQBinaryStoreWriterImmutable for KVQRocksDBStore {
         &self,
         items: &[KVQPair<&'a Vec<u8>, &'a Vec<u8>>],
     ) -> anyhow::Result<()> {
-        let txn = self.db.transaction();
         for item in items {
-            txn.put(item.key.clone(), item.value.clone())?;
+            self.db.put(item.key.clone(), item.value.clone())?;
         }
-        Ok(txn.commit()?)
+        self.db.flush()?;
+        Ok(())
     }
 
     fn imm_set_many_vec(&self, items: Vec<KVQPair<Vec<u8>, Vec<u8>>>) -> anyhow::Result<()> {
-        let txn = self.db.transaction();
         for item in items {
-            txn.put(item.key, item.value)?;
+            self.db.put(item.key, item.value)?;
         }
-        Ok(txn.commit()?)
+        self.db.flush()?;
+
+        Ok(())
     }
 
     fn imm_delete(&self, key: &Vec<u8>) -> anyhow::Result<bool> {
@@ -295,16 +318,14 @@ impl KVQBinaryStoreWriterImmutable for KVQRocksDBStore {
 
     fn imm_delete_many(&self, keys: &[Vec<u8>]) -> anyhow::Result<Vec<bool>> {
         let mut result = Vec::with_capacity(keys.len());
-        let txn = self.db.transaction();
         for key in keys {
-            let r = match txn.delete(key) {
+            let r = match self.db.delete(key) {
                 Ok(_) => true,
                 Err(e) if e.kind() == ErrorKind::NotFound => true,
                 Err(e) => anyhow::bail!(e),
             };
             result.push(r);
         }
-        txn.commit()?;
         Ok(result)
     }
 
@@ -314,11 +335,11 @@ impl KVQBinaryStoreWriterImmutable for KVQRocksDBStore {
                 "Keys and values must be of the same length"
             ));
         }
-        let txn = self.db.transaction();
         for (k, v) in keys.iter().zip(values) {
-            txn.put(k.as_slice(), v.as_slice())?;
+            self.db.put(k.as_slice(), v.as_slice())?;
         }
-        Ok(txn.commit()?)
+        self.db.flush()?;
+        Ok(())
     }
 }
 

@@ -725,6 +725,14 @@ impl TxIndexChainAPI for ChainQuery {
         let blk = bitcoin::Block::from_bytes(&raw).map_err(|err| anyhow::anyhow!(err));
         blk
     }
+    
+    fn get_network(&self) -> Network {
+        self.network
+    }
+    
+    fn get_bitcoin_network(&self) -> bitcoin::Network {
+        self.network.into()
+    }
 }
 
 pub fn load_blockhashes(db: &BaseCDBStore, prefix: &[u8]) -> HashSet<BlockHash> {

@@ -1,9 +1,29 @@
+use bitcoin::hashes::sha256;
 use kvq::traits::{
     KVQBinaryStore, KVQBinaryStoreReader, KVQPair, KVQSerializable,
 };
 
 use super::core::{KVQTable, TABLE_TYPE_FUZZY_BLOCK_INDEX};
 const MAGIC_IMPOSSIBLE_BLOCK_NUMBER: u64 = 0xFFFFFFFFFFFFFFFFu64;
+
+pub const fn get_table_id_hash(name: &'static str) -> u32 {
+    if name.len() > 64 {
+        panic!("Table Name too long");
+    }
+    let s_bytes = name.as_bytes();
+    let mut data = [0u8; 128];
+    let mut i = 0;
+    while i < name.len() {
+        let byte = s_bytes[i];
+        if !byte.is_ascii() {
+            panic!("Table Name not ascii");
+        }
+        data[i] = byte;
+        i += 1;
+    }
+    let st = sha256::Midstate::hash_tag(&data).0;
+    u32::from_be_bytes([st[0], st[1], st[2], st[3]])&0xfffffffu32
+}
 
 pub fn get_table_type_for_raw_key(raw_key: &[u8]) -> u8 {
     raw_key[0] >> 4
@@ -12,7 +32,7 @@ pub fn get_real_key_at_block<T: KVQTable>(
     key: &T::Key,
     block_number: u64,
 ) -> anyhow::Result<Vec<u8>> {
-    let mut real_key_bytes = (T::TABLE_ID | (((T::TABLE_TYPE&0xf) as u32)<<28u32)).to_be_bytes().to_vec();
+    let mut real_key_bytes = (T::TABLE_ID&(0xfffffffu32) | (((T::TABLE_TYPE&0xf) as u32)<<28u32)).to_be_bytes().to_vec();
     real_key_bytes.extend_from_slice(&key.to_bytes()?);
     if T::TABLE_TYPE == TABLE_TYPE_FUZZY_BLOCK_INDEX {
         real_key_bytes.extend_from_slice(&block_number.to_be_bytes());

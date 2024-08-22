@@ -21,6 +21,7 @@ hex-literal = { workspace = true }
 lazy_static = { workspace = true }
 time = { workspace = true }
 log = { workspace = true }
+url = { workspace = true }
 kvq = { path = "../kvq" }
 kvq_store_rocksdb = { path = "../kvq_store_rocksdb" }
 txindex_errors = { path = "../txindex_errors" }

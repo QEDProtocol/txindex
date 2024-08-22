@@ -8,7 +8,8 @@ pub trait TxIndexAPIHandler<T: TxIndexChainAPI> {
   const PATH_SLUG: &'static str;
   fn handle_get_request(
     network: Network,
-    uri: String,
+    pathname: String,
+    query_string: String,
     chain: Arc<T>,
     indexer_db: IndexedBlockDBStoreReader<BaseKVQStore>,
   ) -> TxIndexAPIResponse;

@@ -1,6 +1,7 @@
 use bitcoin::{Block, Txid};
-use kvq::{cache::{CacheValueType, KVQBinaryStoreCached, KVQBinaryStoreCachedTrait}, traits::{KVQBinaryStoreImmutable, KVQBinaryStoreReader, KVQBinaryStoreWriter, KVQPair, KVQSerializable}};
+use kvq::{cache::{CacheValueType, KVQBinaryStoreCached, KVQBinaryStoreCachedTrait}, traits::{KVQBinaryStoreReader, KVQSerializable}};
 use serde::{Deserialize, Serialize};
+
 
 use super::{indexed_block_db::IndexedBlockDBStore, kvstore::BaseKVQStore, table::{core::{KVQTable, TABLE_TYPE_FUZZY_BLOCK_INDEX, TABLE_TYPE_STANDARD, TABLE_TYPE_WRITE_ONCE}, traits::{get_real_key_at_block, get_table_type_for_raw_key}}};
 
@@ -187,8 +188,8 @@ impl IndexedBlockFull {
 
 
 
-
-    db_store.store.imm_set(get_real_key_at_block::<IndexedBlockFull>(&indexed_block.metadata.block_number,indexed_block.metadata.block_number)?, indexed_block.to_bytes()?)?;
+    let key = get_real_key_at_block::<IndexedBlockFull>(&indexed_block.metadata.block_number,indexed_block.metadata.block_number)?;
+    db_store.store.imm_set(key, indexed_block.to_bytes()?)?;
 
     Ok(())
 

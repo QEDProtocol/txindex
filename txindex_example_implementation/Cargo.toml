@@ -25,7 +25,6 @@ bitcoin = { workspace = true }
 
 
 kvq = { path = "../kvq" }
-kvq_store_redb = { path = "../kvq_store_redb" }
 
 txindex_common = { path = "../txindex_common" }
 txindex_errors = { path = "../txindex_errors" }

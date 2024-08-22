@@ -4,11 +4,11 @@ use bitcoin::{BlockHash, OutPoint, Transaction, TxOut, Txid};
 use kvq::{base_types::{DBFlush, DBRow}, cache::KVQBinaryStoreCached};
 use log::{debug, info};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use txindex_common::{chain::Network, config::Config, db::{chain::TxIndexChainAPI, indexed_block::IndexedBlockFull, indexed_block_db::IndexedBlockDBStore, kvstore::{BaseCDBStore, BaseKVQStore, TxIndexStore}}, utils::{block::{BlockEntry, BlockMeta, HeaderEntry}, full_hash, transaction::{has_prevout, is_spendable}}, worker::traits::TxIndexWorker};
+use txindex_common::{chain::Network, config::Config, db::{chain::TxIndexChainAPI, indexed_block_db::IndexedBlockDBStore, kvstore::{BaseCDBStore, BaseKVQStore, TxIndexStore}}, utils::{block::{BlockEntry, BlockMeta, HeaderEntry}, full_hash, transaction::{has_prevout, is_spendable}}, worker::traits::TxIndexWorker};
 
 use crate::{daemon::fetcher::start_fetcher, db::IndexForkHelper, utils::metrics::{Gauge, HistogramOpts, HistogramTimer, HistogramVec, MetricOpts, Metrics}};
 
-use super::{daemon::Daemon, fetcher::FetchFrom, schema::{addr_search_row, BlockRow, ChainQuery, FundingInfo, GetAmountVal, SpendingInfo, TxConfRow, TxEdgeRow, TxHistoryInfo, TxHistoryRow, TxOutRow, TxRow}};
+use super::{daemon::Daemon, fetcher::FetchFrom, schema::{addr_search_row, BlockRow, FundingInfo, GetAmountVal, SpendingInfo, TxConfRow, TxEdgeRow, TxHistoryInfo, TxHistoryRow, TxOutRow, TxRow}};
 use bitcoin::consensus::encode::{deserialize, serialize};
 
 use txindex_errors::core::*;
@@ -156,6 +156,7 @@ impl Indexer {
   }
 
   fn index<I: TxIndexWorker<BaseKVQStore, Q>, Q: TxIndexChainAPI>(&self, q: Arc<Q>, blocks: &[BlockEntry]) {
+    self.store.txstore_db.flush();
       let previous_txos_map = {
           let _timer = self.start_timer("index_lookup");
           lookup_txos(&self.store.txstore_db, &get_previous_txos(blocks), false)
@@ -174,10 +175,10 @@ impl Indexer {
       };
       
       rows.into_iter().zip(blocks).for_each(|(r, b)|{
-        let mut ibdb = IndexedBlockDBStore::new_from_block(KVQBinaryStoreCached::new(Arc::clone(&self.store.indexer_db)), b.entry.height() as u64, &b.block);
+        let ibdb = IndexedBlockDBStore::new_from_block(KVQBinaryStoreCached::new(Arc::clone(&self.store.indexer_db)), b.entry.height() as u64, &b.block);
 
-        IndexForkHelper::<BaseKVQStore, Q, I>::update_with_block(&mut ibdb, Arc::clone(&q), b.entry.height() as u64, &b.block).unwrap();
-        IndexedBlockFull::save_from_db_store(ibdb).unwrap();
+        IndexForkHelper::<Q, I>::update_with_block(ibdb, Arc::clone(&q), b.entry.height() as u64, &b.block).unwrap();
+        
         self.store.history_db.write(r, self.flush);
 
       });
