@@ -1,5 +1,5 @@
 # txindex
-A modular, fork-tolerant framework for writing composable transaction/ordinal indexers on Bitcoin and Dogecoin.
+A modular, reorg/fork-tolerant framework for writing composable transaction/ordinal indexers on Bitcoin and Dogecoin.
 
 ## WARNING
 ***This software is still in development, please DO NOT use in production yet.***
